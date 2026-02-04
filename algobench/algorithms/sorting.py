@@ -91,3 +91,69 @@ def quick_sort(arr: List[int]) -> List[int]:
         stack.append((lo, j))
         stack.append((i, hi))
     return a
+
+
+def heap_sort(arr: List[int]) -> List[int]:
+    a = list(arr)
+    n = len(a)
+
+    def sift_down(start: int, end: int) -> None:
+        root = start
+        while True:
+            child = 2 * root + 1
+            if child > end:
+                break
+            if child + 1 <= end and a[child] < a[child + 1]:
+                child += 1
+            if a[root] < a[child]:
+                a[root], a[child] = a[child], a[root]
+                root = child
+            else:
+                break
+
+    for start in range(n // 2 - 1, -1, -1):
+        sift_down(start, n - 1)
+    for end in range(n - 1, 0, -1):
+        a[0], a[end] = a[end], a[0]
+        sift_down(0, end - 1)
+    return a
+
+
+def _sort_scaler(n: int) -> dict:
+    rng = np.random.default_rng(n)  # deterministic per size
+    return {"arr": rng.integers(-10_000, 10_000, size=n).tolist()}
+
+
+_NLOGN = dict(expected_exponent=1.1, complexity_label="O(n log n)")
+_QUAD = dict(expected_exponent=2.0, complexity_label="O(n^2)")
+
+register(
+    Algorithm(
+        "insertion_sort", "sorting", insertion_sort, check_sort,
+        [random_arrays, adversarial_arrays], scaler=_sort_scaler, **_QUAD,
+    )
+)
+register(
+    Algorithm(
+        "bubble_sort", "sorting", bubble_sort, check_sort,
+        [random_arrays, adversarial_arrays], scaler=_sort_scaler, **_QUAD,
+    )
+)
+register(
+    Algorithm(
+        "merge_sort", "sorting", merge_sort, check_sort,
+        [random_arrays, adversarial_arrays], scaler=_sort_scaler, **_NLOGN,
+    )
+)
+register(
+    Algorithm(
+        "quick_sort", "sorting", quick_sort, check_sort,
+        [random_arrays, adversarial_arrays], scaler=_sort_scaler, **_NLOGN,
+    )
+)
+register(
+    Algorithm(
+        "heap_sort", "sorting", heap_sort, check_sort,
+        [random_arrays, adversarial_arrays], scaler=_sort_scaler, **_NLOGN,
+    )
+)
