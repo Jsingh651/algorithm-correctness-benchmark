@@ -2,4 +2,5 @@
 
 from algobench.algorithms import (  # noqa: F401
     sorting,
+    searching,
 )
