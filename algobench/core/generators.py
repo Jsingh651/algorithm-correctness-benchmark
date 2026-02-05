@@ -87,6 +87,55 @@ def search_cases() -> List[TestCase]:
     ]
     return cases
 
+
+def adversarial_arrays() -> List[TestCase]:
+    """Degenerate arrays that break naive sorting/searching assumptions."""
+    big = int(np.iinfo(np.int64).max)
+    cases = [
+        TestCase("empty", {"arr": []}, "adversarial", {"empty"}, size=0),
+        TestCase("singleton", {"arr": [42]}, "adversarial", {"singleton"}, size=1),
+        TestCase("all_equal", {"arr": [7] * 64}, "adversarial", {"duplicates"}, size=64),
+        TestCase(
+            "already_sorted",
+            {"arr": list(range(128))},
+            "adversarial",
+            {"sorted", "quicksort-worst-case"},
+            size=128,
+        ),
+        TestCase(
+            "reverse_sorted",
+            {"arr": list(range(128, 0, -1))},
+            "adversarial",
+            {"reverse", "quicksort-worst-case"},
+            size=128,
+        ),
+        TestCase(
+            "negatives",
+            {"arr": [-5, -100, -1, -50, 0, -3]},
+            "adversarial",
+            {"negative"},
+            size=6,
+        ),
+        TestCase(
+            "int64_overflow",
+            {"arr": [big, big - 1, big - 2, -big, 0]},
+            "adversarial",
+            {"overflow"},
+            size=5,
+        ),
+        TestCase(
+            "two_elements_swapped",
+            {"arr": [2, 1]},
+            "adversarial",
+            {"minimal"},
+            size=2,
+        ),
+    ]
+    return cases
+
+
+
+
 # --------------------------------------------------------------------------- #
 # Graph generators
 # --------------------------------------------------------------------------- #
