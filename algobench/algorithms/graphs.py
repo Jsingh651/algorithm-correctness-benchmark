@@ -106,6 +106,7 @@ def dfs(graph: dict, n: int, start: int) -> List[int]:
     return order
 
 
+# traversal checker: visit order and reachability
 def check_traversal(payload: dict, output) -> List[str]:
     graph, n, start = payload["graph"], payload["n"], payload["start"]
     if output is None:
