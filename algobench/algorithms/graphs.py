@@ -1,18 +1,33 @@
-"""Graph algorithms over adjacency-dict representations."""
+"""Graph algorithms over adjacency-dict representations.
+
+Unweighted graphs: ``{u: [v, ...]}``. Weighted graphs: ``{u: [(v, w), ...]}``.
+Payloads always carry ``n`` (vertex count) and ``start``.
+
+Checkers validate structural invariants and, for Dijkstra, cross-check against
+SciPy's ``scipy.sparse.csgraph.dijkstra`` as an independent oracle.
+"""
 
 from __future__ import annotations
 
+import heapq
 from collections import deque
 from typing import Dict, List
 
 import numpy as np
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import dijkstra as scipy_dijkstra
 
-from algobench.core.generators import adversarial_graphs, random_graphs
+from algobench.core.generators import (
+    adversarial_graphs,
+    adversarial_weighted_graphs,
+    random_graphs,
+    random_weighted_graphs,
+)
 from algobench.core.registry import Algorithm, register
 
 
-# Reference helpers
- (independent of the implementations under test)
+# --------------------------------------------------------------------------- #
+# Reference helpers (independent of the implementations under test)
 # --------------------------------------------------------------------------- #
 def _reachable(graph: dict, start: int, n: int) -> set:
     if n == 0 or start not in graph:
@@ -67,7 +82,6 @@ def _wcc_count(graph: dict, n: int) -> int:
 
 # --------------------------------------------------------------------------- #
 # Implementations under test
-
 # --------------------------------------------------------------------------- #
 def bfs(graph: dict, n: int, start: int) -> List[int]:
     if n == 0 or start not in graph:
@@ -106,7 +120,56 @@ def dfs(graph: dict, n: int, start: int) -> List[int]:
     return order
 
 
-# traversal checker: visit order and reachability
+def dijkstra(graph: dict, n: int, start: int) -> Dict[int, float]:
+    """Shortest-path distances from ``start`` to every vertex (``inf`` when
+    unreachable). Non-negative weights assumed."""
+    dist = {v: float("inf") for v in range(n)}
+    if n == 0 or start not in graph:
+        return dist
+    dist[start] = 0.0
+    pq = [(0.0, start)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d > dist[u]:
+            continue
+        for v, w in graph.get(u, []):
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist
+
+
+def topological_sort(graph: dict, n: int, start: int):
+    """Kahn's algorithm. Returns a valid topological order, or ``None`` when
+    the graph contains a cycle (no valid order exists)."""
+    indeg = {v: 0 for v in range(n)}
+    for u in range(n):
+        for v in graph.get(u, []):
+            indeg[v] += 1
+    q = deque([v for v in range(n) if indeg[v] == 0])
+    order: List[int] = []
+    while q:
+        u = q.popleft()
+        order.append(u)
+        for v in graph.get(u, []):
+            indeg[v] -= 1
+            if indeg[v] == 0:
+                q.append(v)
+    return order if len(order) == n else None
+
+
+def has_cycle(graph: dict, n: int, start: int) -> bool:
+    return not _is_dag(graph, n)
+
+
+def connected_components(graph: dict, n: int, start: int) -> int:
+    return _wcc_count(graph, n)
+
+
+# --------------------------------------------------------------------------- #
+# Checkers
+# --------------------------------------------------------------------------- #
 def check_traversal(payload: dict, output) -> List[str]:
     graph, n, start = payload["graph"], payload["n"], payload["start"]
     if output is None:
@@ -122,9 +185,81 @@ def check_traversal(payload: dict, output) -> List[str]:
     return violations
 
 
+def check_dijkstra(payload: dict, output) -> List[str]:
+    graph, n, start = payload["graph"], payload["n"], payload["start"]
+    if n == 0:
+        return [] if not output else ["expected empty distances for empty graph"]
+    # Build dense matrix for SciPy oracle.
+    mat = np.zeros((n, n), dtype=float)
+    for u in range(n):
+        for v, w in graph.get(u, []):
+            mat[u, v] = w
+    ref = scipy_dijkstra(csr_matrix(mat), indices=start)
+    violations: List[str] = []
+    for v in range(n):
+        got = output.get(v, float("inf"))
+        exp = ref[v]
+        if np.isinf(exp) and np.isinf(got):
+            continue
+        if not np.isclose(got, exp):
+            violations.append(f"dist[{v}]={got} but SciPy oracle says {exp}")
+    return violations
+
+
+def check_topo(payload: dict, output) -> List[str]:
+    graph, n = payload["graph"], payload["n"]
+    if not _is_dag(graph, n):
+        return [] if output is None else ["cyclic graph must yield None"]
+    if output is None:
+        return ["DAG must yield a topological order, got None"]
+    if sorted(output) != list(range(n)):
+        return ["topological order is not a permutation of all vertices"]
+    pos = {v: i for i, v in enumerate(output)}
+    violations: List[str] = []
+    for u in range(n):
+        for v in graph.get(u, []):
+            if pos[u] > pos[v]:
+                violations.append(f"edge {u}->{v} violates topological order")
+    return violations
+
+
+def check_has_cycle(payload: dict, output) -> List[str]:
+    expected = not _is_dag(payload["graph"], payload["n"])
+    return [] if bool(output) == expected else [f"expected has_cycle={expected}, got {output}"]
+
+
+def check_components(payload: dict, output) -> List[str]:
+    expected = _wcc_count(payload["graph"], payload["n"])
+    return [] if output == expected else [f"expected {expected} components, got {output}"]
+
+
+# --------------------------------------------------------------------------- #
+# Complexity scalers (sparse line-ish graphs)
+# --------------------------------------------------------------------------- #
+def _unweighted_scaler(n: int) -> dict:
+    rng = np.random.default_rng(n)
+    graph = {v: [] for v in range(n)}
+    for u in range(n - 1):
+        graph[u].append(u + 1)  # backbone path keeps it connected
+        # a few random forward edges for realistic branching
+        for _ in range(2):
+            graph[u].append(int(rng.integers(0, n)))
+    return {"graph": graph, "n": n, "start": 0}
+
+
+def _weighted_scaler(n: int) -> dict:
+    rng = np.random.default_rng(n)
+    graph = {v: [] for v in range(n)}
+    for u in range(n - 1):
+        graph[u].append((u + 1, int(rng.integers(1, 20))))
+        graph[u].append((int(rng.integers(0, n)), int(rng.integers(1, 20))))
+    return {"graph": graph, "n": n, "start": 0}
+
+
 _UNW_GENS = [random_graphs, adversarial_graphs]
+_W_GENS = [random_weighted_graphs, adversarial_weighted_graphs]
 
 register(Algorithm("bfs", "graph", bfs, check_traversal, _UNW_GENS,
-                   expected_exponent=1.0, complexity_label="O(V+E)"))
+                   scaler=_unweighted_scaler, expected_exponent=1.0, complexity_label="O(V+E)"))
 register(Algorithm("dfs", "graph", dfs, check_traversal, _UNW_GENS,
-                   expected_exponent=1.0, complexity_label="O(V+E)"))
+                   scaler=_unweighted_scaler, expected_exponent=1.0, complexity_label="O(V+E)"))
