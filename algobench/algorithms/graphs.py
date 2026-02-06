@@ -263,3 +263,7 @@ register(Algorithm("bfs", "graph", bfs, check_traversal, _UNW_GENS,
                    scaler=_unweighted_scaler, expected_exponent=1.0, complexity_label="O(V+E)"))
 register(Algorithm("dfs", "graph", dfs, check_traversal, _UNW_GENS,
                    scaler=_unweighted_scaler, expected_exponent=1.0, complexity_label="O(V+E)"))
+register(Algorithm("topological_sort", "graph", topological_sort, check_topo, _UNW_GENS,
+                   scaler=_unweighted_scaler, expected_exponent=1.0, complexity_label="O(V+E)"))
+register(Algorithm("has_cycle", "graph", has_cycle, check_has_cycle, _UNW_GENS,
+                   expected_exponent=1.0, complexity_label="O(V+E)"))
