@@ -267,3 +267,7 @@ register(Algorithm("topological_sort", "graph", topological_sort, check_topo, _U
                    scaler=_unweighted_scaler, expected_exponent=1.0, complexity_label="O(V+E)"))
 register(Algorithm("has_cycle", "graph", has_cycle, check_has_cycle, _UNW_GENS,
                    expected_exponent=1.0, complexity_label="O(V+E)"))
+register(Algorithm("connected_components", "graph", connected_components, check_components, _UNW_GENS,
+                   expected_exponent=1.0, complexity_label="O(V+E)"))
+register(Algorithm("dijkstra", "graph", dijkstra, check_dijkstra, _W_GENS,
+                   scaler=_weighted_scaler, expected_exponent=1.2, complexity_label="O((V+E)logV)"))
