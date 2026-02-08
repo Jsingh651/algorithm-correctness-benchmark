@@ -6,4 +6,5 @@ from algobench.algorithms import (  # noqa: F401
     graphs,
     dynamic,
     numeric,
+    strings,
 )
