@@ -5,4 +5,5 @@ from algobench.algorithms import (  # noqa: F401
     searching,
     graphs,
     dynamic,
+    numeric,
 )
