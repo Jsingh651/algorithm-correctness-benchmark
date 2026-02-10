@@ -36,7 +36,7 @@ def _print_header(title: str) -> None:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="algobench", description=__doc__)
-    parser.add_argument("--repeats", type=int, default=1, help="executions per case (min time kept)")
+    parser.add_argument("--repeats", type=int, default=1, help="times to run each case (minimum elapsed time is kept)")
     parser.add_argument("--no-complexity", action="store_true", help="skip empirical complexity profiling")
     parser.add_argument("--outdir", default="results", help="directory for CSV output artefacts")
     args = parser.parse_args(argv)
