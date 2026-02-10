@@ -6,3 +6,20 @@
 A structured benchmark suite that evaluates classical computer-science
 algorithms against expected **constraints** (invariants), not just reference
 outputs.
+
+## Quickstart
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m algobench
+```
+
+Useful flags:
+
+```bash
+python -m algobench --repeats 5
+python -m algobench --no-complexity
+python -m algobench --outdir out
+```
