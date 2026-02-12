@@ -4,19 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "algobench"
-version = "0.3.0"
-description = "Algorithm Correctness Benchmark Suite"
+version = "1.0.0"
+description = "Algorithm Correctness Benchmark Suite — constraint-based evaluation of classical CS algorithms with adversarial edge cases and empirical complexity profiling."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "Jaskaran Singh" }]
+keywords = ["algorithms", "benchmark", "testing", "numpy", "scipy", "pandas", "complexity"]
 dependencies = ["numpy>=1.24", "scipy>=1.10", "pandas>=2.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+[project.scripts]
+algobench = "algobench.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["algobench*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

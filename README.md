@@ -167,6 +167,9 @@ python -m algobench --no-complexity    # skip the profiling phase
 python -m algobench --outdir out       # write CSV artefacts to ./out
 ```
 
+Random and adversarial generators use a fixed seed (`SEED = 1234`) so every run
+is reproducible across machines.
+
 ## Sample output
 
 ```
